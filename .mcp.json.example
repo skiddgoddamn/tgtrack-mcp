@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "tgtrack": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "TGTRACK_TOKEN": "<JWT from the settings.tgtrack.ru URL, the ?t=... value>"
+      }
+    }
+  }
+}
