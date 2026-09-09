@@ -1,7 +1,7 @@
 {
   "name": "tgtrack-mcp",
-  "version": "0.1.0",
-  "description": "MCP-сервер для управления tgtrack / «Откуда Подписки» (settings.tgtrack.ru): каналы, интеграции (рекламные системы), скрипт-настройки, цели, ссылки. Read + safe writes через внутренний API (JWT + подпись H=md5(md5(JSON+T)+T)).",
+  "version": "0.2.0",
+  "description": "MCP-сервер для управления tgtrack / «Откуда Подписки»: панель settings.tgtrack.ru (каналы, интеграции, скрипт-настройки, цели, ссылки — JWT + подпись H=md5(md5(JSON+T)+T)) и Bot API bot-api.tgtrack.ru (события старта/стопа, глубокие цели, add_event, get_user_info).",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

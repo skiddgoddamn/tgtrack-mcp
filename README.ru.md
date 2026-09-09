@@ -21,7 +21,7 @@ tgtrack («Откуда Подписки») отслеживает, **откуд
 **tgtrack-mcp** отдаёт этот control-plane как [MCP](https://modelcontextprotocol.io)-инструменты. Он ходит в те же внутренние эндпоинты, что и панель, и **подписывает каждый запрос ровно как панель** (короткоживущий JWT + md5-подпись), так что агент (Claude и т.п.) может смотреть каналы, читать и создавать интеграции, править настройки скрипта, цели и ссылки — за один проход.
 
 - 🔑 **Работает по токену панели** — JWT из URL `settings.tgtrack.ru`, ничего не скрапится и не хардкодится
-- 🧩 **18 инструментов** — чтение + безопасные записи; опасные действия за `confirm: true`
+- 🧩 **26 инструментов** — control plane настроек **плюс рантайм Bot API** (события старта/стопа, глубокие цели, `get_user_info`); чтение + безопасные записи, опасные действия за `confirm: true`
 - 🧮 **Точная подпись** — `H = md5(md5(JSON + T) + T)`, проверена на живом сэмпле
 - 🪶 **TypeScript, ESM, strict** — тонкий, MIT, без секретов в репозитории
 
@@ -103,6 +103,24 @@ npm run build
 | `tgtrack_new_report_key` | ⚠️ Создать новый ключ отчётов — инвалидирует предыдущий. |
 
 Без `confirm: true` опасные инструменты возвращают описание того, что *сделали бы*, и не трогают API.
+
+### Bot API — рантайм-события (`bot-api.tgtrack.ru`)
+
+Отдельный от settings контур: **не** подписывается JWT — шлёт JSON `POST`-ом на
+`https://bot-api.tgtrack.ru/v1/<API_KEY>/<метод>` (MAX: `https://max.tgtrack.ru/API/bot-api/v1/<API_KEY>/<метод>`).
+`API_KEY` — **ключ конкретного бота/канала** (`apiToken` в `tgtrack_get_channel`), не JWT панели —
+передавай его как `apiKey` в каждом вызове либо задай `TGTRACK_BOT_API_KEY`. Для MAX — `max: true`.
+
+| Инструмент | Назначение |
+|------------|------------|
+| `tgtrack_bot_event_url` | Собрать webhook-URL для конструктора (напр. `my_bothelp_was_started`) — без запроса; вставить в BotHelp/SaleBot. |
+| `tgtrack_bot_started` | `my_bot_was_started` — ограниченная интеграция, передать `start_value` (или `auto_detect`). |
+| `tgtrack_bot_user_started` | `user_did_start_bot` — старт с данными пользователя (`user_id`, имя, `start_value`). |
+| `tgtrack_bot_stopped` | `my_bot_was_stopped` — пользователь заблокировал/отписался. |
+| `tgtrack_bot_on_telegram_webhook` | `on_telegram_webhook` — полная интеграция: переслать сырой webhook Telegram 1:1. |
+| `tgtrack_bot_send_reach_goal` | `send_reach_goal` — глубокая цель в рекламную систему, откуда пришёл пользователь (окно 21 день). |
+| `tgtrack_bot_add_event` | `add_event` — событие воронки/продажа с `amount`, `conversion_target`, `labels`. |
+| `tgtrack_bot_get_user_info` | `get_user_info` — utm-метки, даты подписки/отписки и первый источник по `user_id`. |
 
 ## Использование
 

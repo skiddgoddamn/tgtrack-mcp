@@ -30,12 +30,22 @@ import {
   newApiTokenSchema, handleNewApiToken,
   newReportKeySchema, handleNewReportKey,
 } from "./tools/tokens.js";
+import {
+  botEventUrlSchema, handleBotEventUrl,
+  botStartedSchema, handleBotStarted,
+  botUserStartedSchema, handleBotUserStarted,
+  botStoppedSchema, handleBotStopped,
+  botOnTelegramWebhookSchema, handleBotOnTelegramWebhook,
+  botSendReachGoalSchema, handleBotSendReachGoal,
+  botAddEventSchema, handleBotAddEvent,
+  botGetUserInfoSchema, handleBotGetUserInfo,
+} from "./tools/bot-api.js";
 
-const TOOL_COUNT = 18;
+const TOOL_COUNT = 26;
 const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "tgtrack-mcp", version: "0.1.0" });
+  const server = new McpServer({ name: "tgtrack-mcp", version: "0.2.0" });
 
   // ── Чтение ──
   server.tool("tgtrack_list_channels", "Список всех каналов/групп/ботов пользователя в tgtrack.",
@@ -80,6 +90,24 @@ function createMcpServer(): McpServer {
     newApiTokenSchema.shape, async (p) => text(await handleNewApiToken(p)));
   server.tool("tgtrack_new_report_key", "⚠️ Создать новый ключ отчётов — инвалидирует предыдущий. Требует confirm:true.",
     newReportKeySchema.shape, async (p) => text(await handleNewReportKey(p)));
+
+  // ── Bot API (рантайм-события бота/канала: bot-api.tgtrack.ru, ключ apiToken) ──
+  server.tool("tgtrack_bot_event_url", "Собрать URL bot-api для конструктора (например my_bothelp_was_started) — без запроса. Вставляется в webhook-блок бота.",
+    botEventUrlSchema.shape, async (p) => text(await handleBotEventUrl(p)));
+  server.tool("tgtrack_bot_started", "Событие «бот запущен» (ограниченная интеграция, my_bot_was_started): передать start_value (или auto_detect).",
+    botStartedSchema.shape, async (p) => text(await handleBotStarted(p)));
+  server.tool("tgtrack_bot_user_started", "Событие старта с данными пользователя (user_did_start_bot): user_id + имя (+start_value).",
+    botUserStartedSchema.shape, async (p) => text(await handleBotUserStarted(p)));
+  server.tool("tgtrack_bot_stopped", "Событие блокировки/отписки бота (my_bot_was_stopped) по user_id.",
+    botStoppedSchema.shape, async (p) => text(await handleBotStopped(p)));
+  server.tool("tgtrack_bot_on_telegram_webhook", "Полная интеграция: переслать сырой webhook Telegram 1:1 (on_telegram_webhook).",
+    botOnTelegramWebhookSchema.shape, async (p) => text(await handleBotOnTelegramWebhook(p)));
+  server.tool("tgtrack_bot_send_reach_goal", "Глубокая цель (send_reach_goal): пробросить достижение цели в рекламную систему, откуда пришёл пользователь.",
+    botSendReachGoalSchema.shape, async (p) => text(await handleBotSendReachGoal(p)));
+  server.tool("tgtrack_bot_add_event", "Событие жизненного цикла (add_event): шаг воронки/продажа с amount, conversion_target и labels.",
+    botAddEventSchema.shape, async (p) => text(await handleBotAddEvent(p)));
+  server.tool("tgtrack_bot_get_user_info", "Данные пользователя по user_id (get_user_info): utm-метки, даты подписки/отписки, источник.",
+    botGetUserInfoSchema.shape, async (p) => text(await handleBotGetUserInfo(p)));
 
   return server;
 }

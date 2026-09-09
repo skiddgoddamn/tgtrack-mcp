@@ -21,7 +21,7 @@ tgtrack ("Откуда Подписки") tracks **where your Telegram subscribe
 **tgtrack-mcp** exposes that control plane as [MCP](https://modelcontextprotocol.io) tools. It talks to the same internal endpoints the panel uses and **signs every request exactly like the panel does** (a short-lived JWT plus an md5-based request signature), so an AI agent (Claude, etc.) can list channels, read and create integrations, tweak the script settings, goals and links — in one turn.
 
 - 🔑 **Uses your panel token** — a JWT read from the `settings.tgtrack.ru` URL; nothing is scraped or hardcoded
-- 🧩 **18 focused tools** — read + safe writes; destructive actions gated behind `confirm: true`
+- 🧩 **26 focused tools** — the settings control plane **plus the runtime Bot API** (start/stop events, deep goals, `get_user_info`); read + safe writes, destructive actions gated behind `confirm: true`
 - 🧮 **Panel-accurate signing** — `H = md5(md5(JSON + T) + T)`, verified against a live sample
 - 🪶 **TypeScript, ESM, strict** — thin, MIT, no account secrets in the repo
 
@@ -104,6 +104,24 @@ Register it with your MCP client (see [`.mcp.json.example`](./.mcp.json.example)
 
 Without `confirm: true` the dangerous tools return a description of what they *would* do and never touch the API.
 
+### Bot API — runtime events (`bot-api.tgtrack.ru`)
+
+A second contour, separate from the settings API: it is **not** JWT-signed — it `POST`s JSON to
+`https://bot-api.tgtrack.ru/v1/<API_KEY>/<method>` (MAX: `https://max.tgtrack.ru/API/bot-api/v1/<API_KEY>/<method>`).
+The `API_KEY` is the **per-bot/channel key** (`apiToken` in `tgtrack_get_channel`), not the panel JWT —
+pass it as `apiKey` on each call, or set `TGTRACK_BOT_API_KEY`. Add `max: true` for MAX.
+
+| Tool | Purpose |
+|------|---------|
+| `tgtrack_bot_event_url` | Build the webhook URL for a constructor (e.g. `my_bothelp_was_started`) — no API call; paste into BotHelp/SaleBot. |
+| `tgtrack_bot_started` | `my_bot_was_started` — limited integration, send the `start_value` (or `auto_detect`). |
+| `tgtrack_bot_user_started` | `user_did_start_bot` — start with user data (`user_id`, name, `start_value`). |
+| `tgtrack_bot_stopped` | `my_bot_was_stopped` — user blocked/unsubscribed the bot. |
+| `tgtrack_bot_on_telegram_webhook` | `on_telegram_webhook` — full integration: forward the raw Telegram update 1:1. |
+| `tgtrack_bot_send_reach_goal` | `send_reach_goal` — push a funnel goal to the ad system the user came from (21-day window). |
+| `tgtrack_bot_add_event` | `add_event` — lifecycle event / sale with `amount`, `conversion_target`, `labels`. |
+| `tgtrack_bot_get_user_info` | `get_user_info` — utm tags, join/leave dates and first source for a `user_id`. |
+
 ## Usage
 
 Run the MCP server over stdio, or call a tool directly for scripting:
@@ -115,6 +133,10 @@ TGTRACK_TOKEN=... npx tsx src/run.ts tgtrack_list_channels
 TGTRACK_TOKEN=... npx tsx src/run.ts tgtrack_get_channel '{"chatID":"600334c8b9b9e"}'
 TGTRACK_TOKEN=... npx tsx src/run.ts tgtrack_get_integration_script \
   '{"linkID":"5cd4255d831d9e","counterID":"110494105"}'
+
+# Bot API (per-bot key, no JWT):
+npx tsx src/run.ts tgtrack_bot_event_url '{"apiKey":"<API_KEY>","method":"my_bothelp_was_started"}'
+npx tsx src/run.ts tgtrack_bot_get_user_info '{"apiKey":"<API_KEY>","userId":"123456789"}'
 ```
 
 Streamable HTTP transport:
@@ -125,10 +147,10 @@ TGTRACK_TOKEN=... node dist/index.js --http --port 3001   # /mcp, /health
 
 ## Scope
 
-**Included (v1):** the full settings/management control plane — channels, integrations, script settings, goals, links, reports.
+**Included:** the full settings/management control plane — channels, integrations, script settings, goals, links, reports — **and the runtime Bot API** (start/stop events, deep goals, `add_event`, `get_user_info`).
 
 **Not included yet:**
-- **Analytics data** (subscribers over time, source breakdown, conversions) — this lives behind a separate reporting API keyed by a report key (`tgtrack_new_report_key`). Planned for v2.
+- **Analytics reports** (subscribers over time, source breakdown, conversions) — this lives behind a separate reporting API keyed by a report key (`tgtrack_new_report_key`). Planned for v2.
 - **Admin tools** (`deleteChannel`, `changeUserAccess`, …) — planned behind a flag (v1.1).
 - **MAX** (`max.tgtrack.ru`) parity — behind a `service` option.
 

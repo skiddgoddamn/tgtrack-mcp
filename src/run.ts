@@ -6,6 +6,7 @@ import * as channels from "./tools/channels.js";
 import * as integrations from "./tools/integrations.js";
 import * as links from "./tools/links.js";
 import * as tokens from "./tools/tokens.js";
+import * as botApi from "./tools/bot-api.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const H: Record<string, (p: any) => Promise<string>> = {
@@ -27,6 +28,14 @@ const H: Record<string, (p: any) => Promise<string>> = {
   tgtrack_delete_outbound_link: links.handleDeleteOutboundLink,
   tgtrack_new_api_token: tokens.handleNewApiToken,
   tgtrack_new_report_key: tokens.handleNewReportKey,
+  tgtrack_bot_event_url: botApi.handleBotEventUrl,
+  tgtrack_bot_started: botApi.handleBotStarted,
+  tgtrack_bot_user_started: botApi.handleBotUserStarted,
+  tgtrack_bot_stopped: botApi.handleBotStopped,
+  tgtrack_bot_on_telegram_webhook: botApi.handleBotOnTelegramWebhook,
+  tgtrack_bot_send_reach_goal: botApi.handleBotSendReachGoal,
+  tgtrack_bot_add_event: botApi.handleBotAddEvent,
+  tgtrack_bot_get_user_info: botApi.handleBotGetUserInfo,
 };
 
 const [tool, jsonArg] = process.argv.slice(2);
